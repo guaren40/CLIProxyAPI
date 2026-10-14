@@ -42,3 +42,13 @@ jobs:
           test "$ready" = true
           docker exec cliproxyapi-smoke /bin/sh -c 'test -s /data/config.yaml && test -s /data/initial-credentials.txt'
           test "$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:$port/v1/models")" = 401
+
+  cross-build:
+    if: github.repository == 'guaren40/CLIProxyAPI'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cross build ARM64 image on AMD64 host
+        run: docker build --platform linux/arm64 --tag cliproxyapi-arm64:cross .
+      - name: Verify image architecture
+        run: test "$(docker image inspect cliproxyapi-arm64:cross --format '{{.Architecture}}')" = arm64
