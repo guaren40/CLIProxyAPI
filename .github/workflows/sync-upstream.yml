@@ -37,14 +37,34 @@ jobs:
           fi
 
           previous="$(git rev-parse HEAD)"
+          # A deletion or rename in the protected deployment paths can still
+          # report a merge conflict; resolve those paths from this fork below.
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            merge --no-commit --no-ff -X ours "$upstream_sha"
+            merge --no-commit --no-ff -X ours "$upstream_sha" || true
+          test -f "$(git rev-parse --git-path MERGE_HEAD)"
+
+          while IFS= read -r -d '' conflict; do
+            case "$conflict" in
+              Dockerfile|.dockerignore|docker-compose.yml|docker-compose.cluster.yml|.github/workflows/*|deploy/zeabur-entrypoint.sh|zeabur-template.yaml|README_ZEABUR_CN.md)
+                if git cat-file -e "$previous:$conflict" 2>/dev/null; then
+                  git checkout -f "$previous" -- "$conflict"
+                else
+                  git rm -f -- "$conflict"
+                fi
+                ;;
+              *) echo "Unresolved upstream conflict: $conflict" >&2; exit 1 ;;
+            esac
+          done < <(git diff --name-only --diff-filter=U -z)
 
           # Preserve the fork's deployment contract and workflows. Upstream code
           # outside these paths is merged normally.
           git restore --source="$previous" --staged --worktree -- \
             Dockerfile .dockerignore docker-compose.yml docker-compose.cluster.yml .github/workflows \
             deploy/zeabur-entrypoint.sh zeabur-template.yaml README_ZEABUR_CN.md
+          if [ -n "$(git ls-files -u)" ]; then
+            echo 'Upstream has conflicts outside the protected deployment paths.' >&2
+            exit 1
+          fi
           git diff --cached --check
           echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
           echo 'updated=true' >> "$GITHUB_OUTPUT"
