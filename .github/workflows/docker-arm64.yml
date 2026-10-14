@@ -20,3 +20,25 @@ jobs:
         run: |
           test "$(docker image inspect cliproxyapi-arm64:check --format '{{.Architecture}}')" = arm64
           test "$(docker run --rm --platform linux/arm64 --entrypoint /bin/uname cliproxyapi-arm64:check -m)" = aarch64
+      - name: Smoke test first-run service
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name cliproxyapi-smoke --platform linux/arm64 \
+            -p 127.0.0.1::8317 \
+            -e CLI_PROXY_API_KEY=ci_api_key \
+            -e CLI_PROXY_MANAGEMENT_KEY=ci_management_key \
+            cliproxyapi-arm64:check
+          trap 'docker rm -f cliproxyapi-smoke >/dev/null 2>&1 || true' EXIT
+          port="$(docker port cliproxyapi-smoke 8317/tcp | awk -F: '{print $NF}')"
+          ready=false
+          for _ in {1..30}; do
+            if curl -fsS --max-time 2 "http://127.0.0.1:$port/healthz" | grep -q '"status":"ok"'; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = true
+          docker exec cliproxyapi-smoke /bin/sh -c 'test -s /data/config.yaml && test -s /data/initial-credentials.txt'
+          test "$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:$port/v1/models")" = 401
