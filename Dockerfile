@@ -6,7 +6,7 @@ WORKDIR /app
 RUN set -eux; \
     apt-get update; \
     case "$(dpkg --print-architecture)" in \
-      amd64) apt-get install -y --no-install-recommends build-essential binutils gcc-aarch64-linux-gnu ca-certificates tzdata git ;; \
+      amd64) apt-get install -y --no-install-recommends build-essential binutils gcc-aarch64-linux-gnu libc6-dev-arm64-cross ca-certificates tzdata git ;; \
       arm64) apt-get install -y --no-install-recommends build-essential binutils ca-certificates tzdata git ;; \
       *) echo 'Only amd64 and arm64 build hosts are supported' >&2; exit 1 ;; \
     esac; \
