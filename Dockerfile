@@ -1,14 +1,8 @@
-# Both the build host and the resulting image must be ARM64.
+# The builder and runtime stages use ARM64 images; the result is ARM64 only.
 FROM --platform=linux/arm64 golang:1.26-bookworm AS builder
-ARG BUILDPLATFORM
-
 WORKDIR /app
 
 RUN set -eux; \
-    if [ "$BUILDPLATFORM" != "linux/arm64" ]; then \
-      echo 'An ARM64 build host is required' >&2; \
-      exit 1; \
-    fi; \
     apt-get update; \
     apt-get install -y --no-install-recommends build-essential binutils ca-certificates tzdata git; \
     rm -rf /var/lib/apt/lists/*
