@@ -1,6 +1,6 @@
 # Zeabur ARM64 部署
 
-本仓库根目录的 `Dockerfile` 要求构建主机和运行节点均为 ARM64，并固定生成 `linux/arm64` 镜像。Zeabur 选择本 GitHub 仓库的 `main` 分支即可识别 Dockerfile；无需填写构建参数、环境变量或上传 `config.yaml`。如果 Zeabur 当前项目不能提供 ARM64 构建与运行节点，部署会直接失败；本仓库不会使用其他架构或交叉编译。
+本仓库根目录的 `Dockerfile` 将构建阶段和最终镜像都固定为 `linux/arm64`，只产出 ARM64 镜像，运行节点必须为 ARM64。Zeabur 选择本 GitHub 仓库的 `main` 分支即可识别 Dockerfile；无需填写构建参数、环境变量或上传 `config.yaml`。Zeabur 的构建环境还必须能够执行 ARM64 构建阶段；如果不能，构建会直接失败，不会生成其他架构的镜像。
 
 完整的一键部署模板保存在 [`zeabur-template.yaml`](zeabur-template.yaml)。它指定本仓库的 GitHub 仓库 ID、8317 HTTP 端口、持久的 `/data` 卷，并自动生成两枚独立随机密钥。将该模板导入 Zeabur 后，选择或生成域名并部署即可；部署后在首次启动日志，或在 Zeabur 文件管理器的 `/data/initial-credentials.txt` 中查看 API Key 和管理密钥。模板必须先在 Zeabur 导入或发布，单纯把 YAML 放在 GitHub 不会自动创建 Zeabur 的部署按钮。
 
