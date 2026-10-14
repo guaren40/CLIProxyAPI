@@ -1,15 +1,16 @@
-# The build runs on Zeabur's build host, while the resulting image is always ARM64.
-FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS builder
+# Both the build host and the resulting image must be ARM64.
+FROM --platform=linux/arm64 golang:1.26-bookworm AS builder
+ARG BUILDPLATFORM
 
 WORKDIR /app
 
 RUN set -eux; \
+    if [ "$BUILDPLATFORM" != "linux/arm64" ]; then \
+      echo 'An ARM64 build host is required' >&2; \
+      exit 1; \
+    fi; \
     apt-get update; \
-    case "$(dpkg --print-architecture)" in \
-      amd64) apt-get install -y --no-install-recommends build-essential binutils gcc-aarch64-linux-gnu libc6-dev-arm64-cross ca-certificates tzdata git ;; \
-      arm64) apt-get install -y --no-install-recommends build-essential binutils ca-certificates tzdata git ;; \
-      *) echo 'Only amd64 and arm64 build hosts are supported' >&2; exit 1 ;; \
-    esac; \
+    apt-get install -y --no-install-recommends build-essential binutils ca-certificates tzdata git; \
     rm -rf /var/lib/apt/lists/*
 
 COPY go.mod go.sum ./
@@ -23,14 +24,13 @@ ARG COMMIT=none
 ARG BUILD_DATE=unknown
 
 RUN set -eux; \
-    if [ "$(dpkg --print-architecture)" = arm64 ]; then export CC=gcc; else export CC=aarch64-linux-gnu-gcc; fi; \
-    CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -buildvcs=false \
+    CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=gcc go build -buildvcs=false \
       -ldflags="-s -w -X 'main.Version=${VERSION}' -X 'main.Commit=${COMMIT}' -X 'main.BuildDate=${BUILD_DATE}'" \
       -o /app/CLIProxyAPI ./cmd/server/; \
     readelf -h /app/CLIProxyAPI | grep -Eq 'Machine:[[:space:]]*AArch64'; \
     chmod 0755 /app/deploy/zeabur-entrypoint.sh
 
-# Do not add RUN instructions below: an amd64 build host must not execute ARM64 binaries.
+# The runtime image is ARM64 only.
 FROM --platform=linux/arm64 debian:bookworm-slim
 
 WORKDIR /CLIProxyAPI
