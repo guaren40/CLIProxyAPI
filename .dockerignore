@@ -20,6 +20,7 @@ auths
 logs
 conv
 config.yaml
+initial-credentials.txt
 
 # Development/editor
 bin

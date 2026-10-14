@@ -1,0 +1,22 @@
+name: Docker ARM64 build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.repository == 'guaren40/CLIProxyAPI'
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ARM64 image
+        run: docker build --platform linux/arm64 --tag cliproxyapi-arm64:check .
+      - name: Verify image architecture
+        run: |
+          test "$(docker image inspect cliproxyapi-arm64:check --format '{{.Architecture}}')" = arm64
+          test "$(docker run --rm --platform linux/arm64 --entrypoint /bin/uname cliproxyapi-arm64:check -m)" = aarch64

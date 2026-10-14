@@ -1,0 +1,54 @@
+apiVersion: zeabur.com/v1
+kind: Template
+metadata:
+  name: CLIProxyAPI ARM64
+spec:
+  description: ARM64-only Docker build from guaren40/CLIProxyAPI with persistent configuration and credentials.
+  variables:
+    - key: PUBLIC_DOMAIN
+      type: DOMAIN
+      name: Public domain
+      description: Generate a Zeabur domain for the API and management panel.
+  readme: |-
+    # CLIProxyAPI ARM64
+    This template builds the Dockerfile in guaren40/CLIProxyAPI on the main branch.
+    It creates a persistent /data volume and independent random access keys.
+    After deployment, view the two keys in the first-run service logs or in
+    /data/initial-credentials.txt using Zeabur's file manager.
+    The management panel is available at your domain followed by /management.html.
+  services:
+    - name: cli-proxy-api
+      template: GIT
+      domainKey: PUBLIC_DOMAIN
+      spec:
+        source:
+          source: GITHUB
+          repo: 1419004492
+          branch: main
+        ports:
+          - id: web
+            port: 8317
+            type: HTTP
+        volumes:
+          - id: data
+            dir: /data
+        env:
+          PORT:
+            default: "8317"
+        instructions:
+          - type: TEXT
+            title: First-run credentials
+            content: View the first-run service logs or /data/initial-credentials.txt in Zeabur's file manager.
+  localization:
+    zh-CN:
+      description: 从 guaren40/CLIProxyAPI 构建纯 ARM64 Docker 镜像，自动创建持久卷与随机密钥。
+      variables:
+        - key: PUBLIC_DOMAIN
+          type: DOMAIN
+          name: 公网域名
+          description: 为 API 与管理界面生成 Zeabur 域名。
+      readme: |-
+        # CLIProxyAPI ARM64
+        模板从本仓库 main 分支的 Dockerfile 构建，只生成 ARM64 镜像。
+        /data 持久卷保存配置与登录凭据。部署后在首次启动日志，或 Zeabur 文件管理器中的 `/data/initial-credentials.txt` 查看 API Key 和管理密钥。
+        管理页面地址是 `https://你的域名/management.html`。

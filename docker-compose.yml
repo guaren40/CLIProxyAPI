@@ -1,5 +1,6 @@
 services:
   cli-proxy-api:
+    platform: linux/arm64
     image: ${CLI_PROXY_IMAGE:-eceasy/cli-proxy-api:latest}
     pull_policy: always
     build:
